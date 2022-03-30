@@ -1,7 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
+import 'album_model.dart';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
+
+import 'list_item.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,68 +17,52 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late Future<Info> futureInfo;
+  List<Album> _albumList = [];
+  bool isLoading = true;
+
+  void getData() async {
+    var url = Uri.parse('https://jsonplaceholder.typicode.com/albums');
+    http.Response response = await http.get(url);
+    setState(() {
+      _albumList = AlbumList.fromJson(json.decode(response.body)).albums;
+      isLoading = false;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    futureInfo = fetchInfo();
+    getData();
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Exercise 1 by Chakphet Phachanawan 613040006-1',
+      title: 'Exercise 2 by Chakphet Phachanawan 613040006-1',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Exercise 1 by Chakphet Phachanawan 613040006-1'),
+          title: const Text('Exercise 2 by Chakphet Phachanawan 613040006-1'),
         ),
-        body: Center(
-          child: FutureBuilder<Info>(
-              future: futureInfo,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return Text(
-                      '${snapshot.data!.name} works at ${snapshot.data!.companyName}');
-                } else if (snapshot.hasError) {
-                  return Text('${snapshot.error}');
-                }
-                return const CircularProgressIndicator();
-              }),
-        ),
+        body: isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    CircularProgressIndicator(),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                itemCount: _albumList.length,
+                itemBuilder: (context, index) => ListItem(
+                  album: _albumList[index],
+                ),
+              ),
       ),
-    );
-  }
-}
-
-Future<Info> fetchInfo() async {
-  final response =
-      await http.get(Uri.parse('https://jsonplaceholder.typicode.com/users/1'));
-
-  if (response.statusCode == 200) {
-    return Info.fromJson(jsonDecode(response.body));
-  } else {
-    throw Exception('Faied to load info');
-  }
-}
-
-class Info {
-  final String name;
-  final String companyName;
-
-  const Info({
-    required this.name,
-    required this.companyName,
-  });
-
-  factory Info.fromJson(Map<String, dynamic> json) {
-    return Info(
-      name: json['name'],
-      companyName: json['company']['name'],
     );
   }
 }
